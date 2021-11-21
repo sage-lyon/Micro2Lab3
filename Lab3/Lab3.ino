@@ -5,11 +5,11 @@
 #include <String.h>
 //PHYSICAL DESIGN FOR CLOCK BELOW
 /*
- * GND is ground. Obviously.
- * VCC is 5 volts. Get that 3 volt crap out of here.
+ * GND is ground.
+ * VCC is 5 volts. 
  * SDA is connected to SDA...
  * SCL is also connected to SCL...
- * SQW is for a square wave thing, but were not going to be using this.
+ * SQW is for a square wave, but were not going to be using this.
  */
 //RTC Object
 RTC_DS1307 rtc;
@@ -57,17 +57,14 @@ volatile byte state = LOW;
 boolean timer = false;
 
 void setup() {
+  //The code below sets up the button interrupt for the lab.
   cli();
-  TCCR1A = 0;// set entire TCCR1A register to 0
-  TCCR1B = 0;// same for TCCR1B
-  TCNT1  = 0;//initialize counter value to 0
-  // set compare match register for 1hz increments
-  OCR1A = 15624;// = (16*10^6) / (1*1024) - 1 (must be <65536)
-  // turn on CTC mode
+  TCCR1A = 0;
+  TCCR1B = 0;
+  TCNT1  = 0;
+  OCR1A = 15624;
   TCCR1B |= (1 << WGM12);
-  // Set CS12 and CS10 bits for 1024 prescaler
   TCCR1B |= (1 << CS12) | (1 << CS10);  
-  // enable timer compare interrupt
   TIMSK1 |= (1 << OCIE1A);
   sei();
   
@@ -82,27 +79,27 @@ void setup() {
   pinMode(3, INPUT);
   
   lcd.begin(16,2); //Begins communication with LCD.
-  rtc.begin();
+  rtc.begin();    //Begins communication with RTC.
   stopRTC();  //Stops the RTC
 
-  rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); //Sets the RTC's registers to the current date and time/
+  rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); //Sets the RTC's registers to the current date and time
 
   startRTC();   //Starts the RTC
    
   Serial.begin(57600);
 }
 
-void loop() {
+void loop() {   //Main loop, runs motor control function, then prints data to LCD.
   
   if(timer == true){
     timer = false;
-    motorControl();y
+    motorControl();
     lcdPrint();
     }
   
 }
 
-void stopRTC(){
+void stopRTC(){ //Stops the internal oscillator within the RTC to write data to it.
   Wire.begin();
   Wire.begin(0x68); //Start I2C protocol with DS1307 address
   Wire.write(0); //Send Register Address
@@ -111,7 +108,7 @@ void stopRTC(){
   Wire.end();
   }
 
-void startRTC(){
+void startRTC(){ //Starts the internal oscillator of the RTC.
   Wire.begin();
   Wire.begin(0x68); //Start I2C protocol with DS1307 address
   Wire.write(0); //Send Register Address
@@ -121,7 +118,7 @@ void startRTC(){
   
   }
 
-void lcdPrint(){
+void lcdPrint(){ //This function prints everything to the LCD display.
   lcd.clear();
   currentTime = rtc.now();
   lcd.setCursor(0,0);
@@ -136,24 +133,24 @@ void lcdPrint(){
   lcd.print("Fan: "); lcd.print(fanPower); lcd.print("% "); lcd.print("("); lcd.print(rotation); lcd.print(")");
   }
 
-void motorControl(){
+void motorControl(){ //This function controls the Motor direction and if it is on or off.
   int power;
   currentTime = rtc.now();
-  if(currentTime.second() > 29){
+  if(currentTime.second() > 29){ //If seconds is above 29, turn of the motor.
     fanPower = 0;
     digitalWrite(E1, LOW);
     digitalWrite(I1, LOW);
     digitalWrite(I2, LOW);
     }
-  else{
-    fanPower = 100;
+  else{                         //If below 29 seconds, turn on the motor.
+    fanPower = 100;   
     power = ((255/100)*fanPower);
-    if(rotation == "CCW"){
+    if(rotation == "CCW"){      //If the rotation variable is "CCW" make the motor spin CCW
       digitalWrite(E1, power);
       digitalWrite(I1, HIGH);
       digitalWrite(I2, LOW);
       }
-    if(rotation == "CW"){
+    if(rotation == "CW"){       //If the rotation variable is "CCW" make the motor spin CCW
       digitalWrite(E1, power);
       digitalWrite(I1, LOW);
       digitalWrite(I2, HIGH);
